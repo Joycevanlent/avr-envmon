@@ -10,6 +10,7 @@ set(F_CPU 16000000UL)
 add_executable(main
     src/main.c
     src/communication/usart.c
+    src/utils/timer.c
 )
 
 target_include_directories(main PRIVATE include)
