@@ -1,5 +1,5 @@
-#include "usart.h"
-#include "timer.h"
+#include "drivers/avr/usart.h"
+#include "drivers/avr/timer.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>

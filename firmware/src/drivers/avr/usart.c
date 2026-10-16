@@ -1,4 +1,5 @@
-#include "usart.h"
+#include "drivers/avr/usart.h"
+
 #include <avr/io.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -10,17 +11,20 @@
 
 void usartInit(void)
 {
-    /*Set baud rate */
+    // Set baud rate
     UBRR0H = UBRRH_VALUE;
     UBRR0L = UBRRL_VALUE;
+
     #if USE_2X
         UCSR0A |= (1 << U2X0);
     #else
         UCSR0A &= ~(1 << U2X0);
     #endif
-    /* Enable receiver and transmitter */
+    
+    // Enable receiver and transmitter 
     UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-    /* Set frame format: 8data, 2stop bit */
+    
+    // Set frame format: 8data, 2stop bit 
     UCSR0C = (1 << USBS0) | (3 << UCSZ00);
 }
 
