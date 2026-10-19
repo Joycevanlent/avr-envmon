@@ -1,9 +1,3 @@
-#ifndef CIRCULARBUFFER_H
-#define CIRCULARBUFFER_H
-
-#include <stdint.h>
-#include <stdbool.h>
-
 /**
  * @file circularbuffer.h
  * @brief Generic fixed-size circular (ring) buffer, safe to share between an
@@ -11,6 +5,12 @@
  * One slot is always kept empty to tell "full" from "empty", so the usable
  * capacity is `capacity - 1` elements.
  */
+
+#ifndef CIRCULARBUFFER_H
+#define CIRCULARBUFFER_H
+
+#include <stdint.h>
+#include <stdbool.h>
 
 /**
  * @brief Smallest supported capacity. With one slot always kept empty, a

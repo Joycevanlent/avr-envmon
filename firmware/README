@@ -1,4 +1,4 @@
-cmake -G Ninja ..
+cmake -G Ninja -B build .
 
-cmake --build .
-cmake --build . --target upload
+cmake --build build
+cmake --build build --target upload

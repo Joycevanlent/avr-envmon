@@ -12,6 +12,8 @@ if(NOT RUNNING_TESTS)
     add_executable(main
         src/main.c
         src/circularbuffer.c
+        src/envmon_machine.c
+        src/sensor_manager.c
         src/drivers/avr/usart.c
         src/drivers/avr/timer.c
     )
