@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-//#define F_CPU 16000000UL
 #define BAUD 9600
 
 #include <util/setbaud.h>
@@ -47,9 +46,8 @@ void usartTransmitString(const char *str)
 
 void usartFlush(void)
 {
-    uint8_t dummy;
     while (UCSR0A & (1 << RXC0))
     {
-        dummy = UDR0;
+        (void)UDR0;
     }
 }
