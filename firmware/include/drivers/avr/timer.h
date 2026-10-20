@@ -1,5 +1,5 @@
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef DRIVERS_AVR_TIMER_H
+#define DRIVERS_AVR_TIMER_H
 
 #include <stdint.h>
 
@@ -16,4 +16,4 @@ void timerInit();
  */
 uint32_t timerMillis();
 
-#endif // TIMER_H
+#endif // DRIVERS_AVR_TIMER_H

@@ -23,6 +23,8 @@ void timerInit()
     TCCR0B &= ~_BV(CS02);
     TCCR0B |= _BV(CS01);
     TCCR0B |= _BV(CS00);
+
+    sei();
 }
 
 /**
