@@ -10,7 +10,7 @@
 /**
  * @brief Initializes the sensor manager and all underlying sensor peripherals (e.g., I2C, ADC).
  */
-void sensorManager_init(void);
+void sensorManagerInit(void);
 
 /**
  * @brief Triggers a new measurement cycle for all active sensors.

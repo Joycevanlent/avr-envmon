@@ -3,7 +3,7 @@
 
 static sensorPayload currentPayload;
 
-void sensorManager_init()
+void sensorManagerInit()
 {
 
 }

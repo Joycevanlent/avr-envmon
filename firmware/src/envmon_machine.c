@@ -1,110 +1,145 @@
 #include "envmon_machine.h"
 #include "sensor_data.h"
 #include "sensor_manager.h"
-#include "drivers/avr/usart.h"
-#include "drivers/avr/timer.h"
+#include "usart.h"
 
-#include <avr/interrupt.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef enum
 {
-    STATE_SLEEP_IDLE,
+    STATE_IDLE,
     STATE_MEASURING,
-    STATE_ERROR
+    STATE_ERROR,
+    STATE_COUNT // For static assert
 } state;
 
-static state currentState = STATE_SLEEP_IDLE;
-static uint32_t previousMillis = 0;
-static const uint32_t measureInterval = 2000;
+typedef void (*stateAction)(void);
+typedef void (*stateRunAction)(uint32_t currentMillis);
+
+typedef struct
+{
+    stateAction onEnter;
+    stateRunAction onRun;
+    stateAction onExit;
+} stateBehavior;
+
+void changeState(state newState);
+static void idleOnRun(uint32_t currentMillis);
+static void measuringOnEnter(void);
+static void errorOnEnter(void);
+static void errorOnRun(uint32_t nowMillis);
+static bool formatSensorPayload(char *buffer, uint8_t bufferSize, const sensorPayload *payload);
+
+static state currentState = STATE_IDLE;
+//static uint32_t errorTimestamp = 0;
+static uint16_t sendErrorCount = 0;
+
+static const stateBehavior stateTable[STATE_COUNT] = {
+    [STATE_IDLE] = {
+        .onEnter = NULL,
+        .onRun = idleOnRun,
+        .onExit = NULL},
+    [STATE_MEASURING] = {.onEnter = measuringOnEnter, .onRun = NULL, .onExit = NULL},
+    [STATE_ERROR] = {.onEnter = errorOnEnter, .onRun = errorOnRun, .onExit = NULL}};
+
+_Static_assert(sizeof(stateTable) / sizeof(stateTable[0]) == STATE_COUNT, "State table size mismatch");
 
 void envmonMachineInit(void)
 {
-    usartInit();
-    timerInit();
-
-    sei();
+    sensorManagerInit();
+    currentState = STATE_IDLE;
 }
 
-void envmonMachineLoop(void)
+void changeState(state newState)
 {
-    uint32_t currentMillis = timerMillis();
-    switch (currentState)
+    if (newState >= STATE_COUNT)
     {
-    case STATE_SLEEP_IDLE:
+        return;
+    }
+
+    if (stateTable[currentState].onExit != NULL)
     {
-        if (currentMillis - previousMillis >= measureInterval)
+        stateTable[currentState].onExit();
+    }
+
+    currentState = newState;
+
+    if (stateTable[currentState].onEnter != NULL)
+    {
+        stateTable[currentState].onEnter();
+    }
+}
+
+void envmonMachineLoop(uint32_t nowMillis)
+{
+    if (currentState < STATE_COUNT && stateTable[currentState].onRun != NULL)
+    {
+        stateTable[currentState].onRun(nowMillis);
+    }
+}
+
+// temp helper
+static bool formatSensorPayload(char *buffer, uint8_t bufferSize, const sensorPayload *payload)
+{
+    int length = snprintf(buffer, bufferSize, "%d,%u\r\n", payload->temperature, payload->brightness);
+    return (length > 0 && (uint8_t)length < bufferSize);
+}
+
+// -- STATE_SLEEP_IDLE --
+static void idleOnRun(uint32_t currentMillis)
+{
+    static uint32_t previousMillis = 0;
+    const uint32_t measureInterval = 2000;
+
+    if (currentMillis - previousMillis >= measureInterval)
+    {
+        previousMillis += measureInterval;
+        changeState(STATE_MEASURING);
+    }
+}
+
+// -- STATE_MEASURING --
+static void measuringOnEnter(void)
+{
+    sensorManagerReadSensors();
+    sensorPayload *currentPayload = sensorManagerGetData();
+
+    char textBuffer[24];
+    if (formatSensorPayload(textBuffer, sizeof(textBuffer), currentPayload))
+    {
+        if (!usartSend((const uint8_t *)textBuffer, (uint8_t)strlen(textBuffer)))
         {
-            previousMillis += measureInterval;
-            currentState = STATE_MEASURING;
+            sendErrorCount++;
+            changeState(STATE_ERROR);
+            return;
         }
-        break;
     }
-    case STATE_MEASURING:
+
+    changeState(STATE_IDLE);
+}
+
+// --- STATE_ERROR ---
+static void errorOnEnter(void)
+{
+}
+
+static void errorOnRun(uint32_t nowMillis)
+{
+    static uint32_t errorStartMillis = 0;
+    static bool timerStarted = false;
+    const uint32_t errorTimeout = 5000;
+
+    if (!timerStarted)
     {
-        sensorManagerReadSensors();
-
-        sensorPayload *currentPayload = sensorManagerGetData();
-
-        char textBuffer[24];
-        int length = snprintf(textBuffer, sizeof(textBuffer), "%d,%u\r\n",
-                                  currentPayload->temperature,
-                                  currentPayload->brightness);
-
-        if (length > 0 && (uint8_t)length < sizeof(textBuffer))
-        {
-            if(!usartSend((const uint8_t *)textBuffer, (uint8_t)length))
-            {
-                // not send
-            }
-        }
-
-        currentState = STATE_SLEEP_IDLE;
-        break;
+        errorStartMillis = nowMillis;
+        timerStarted = true;
     }
-    case STATE_ERROR:
+
+    if (nowMillis - errorStartMillis >= errorTimeout)
     {
-        break;
+        timerStarted = false;
+        changeState(STATE_IDLE);
     }
-    default:
-        currentState = STATE_SLEEP_IDLE;
-        break;
-    }
-}
-
-void stateSleepIdleEntry()
-{
-}
-
-void stateSleepIdleDo()
-{
-}
-
-void stateSleepIdleExit()
-{
-}
-
-void stateMeasuringEntry()
-{
-}
-
-void stateMeasuringDo()
-{
-}
-
-void stateMeasuringExit()
-{
-}
-
-void stateErrorEntry()
-{
-}
-
-void stateErrorDo()
-{
-}
-
-void stateErrorExit()
-{
 }
