@@ -9,20 +9,9 @@
 void usartInit(void);
 
 /**
- * @brief Transmits a single byte through the USART peripheral.
- * 
- * 
- * @param byte The byte to transmit
+ * @brief Sends data over USART.
  */
-void usartTransmit(uint8_t byte);
-
-/**
- * @brief Transmits a string through the USART peripheral
- * 
- * 
- * @param str The string to transmit
- */
-void usartTransmitString(const char *str);
+bool usartSend(const uint8_t *data, uint8_t length);
 
 /**
  * @brief Flushes the USART transmit buffer.

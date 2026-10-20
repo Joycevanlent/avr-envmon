@@ -3,82 +3,108 @@
 #include "sensor_manager.h"
 #include "drivers/avr/usart.h"
 #include "drivers/avr/timer.h"
-#include "circularbuffer.h"
 
 #include <avr/interrupt.h>
-#include <avr/io.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 
-#define SEND_BUFFER_CAPACITY 16
-static uint8_t sendDataStorage[SEND_BUFFER_CAPACITY];
-static cbuffer sendBuffer;
-
 typedef enum
 {
-    SLEEP,
-    READ_STATION,
-    SEND_DATA
+    STATE_SLEEP_IDLE,
+    STATE_MEASURING,
+    STATE_ERROR
 } state;
 
-state currentState = SLEEP;
-uint32_t previousMillis = 0;
-uint32_t measureInterval = 2000;
+static state currentState = STATE_SLEEP_IDLE;
+static uint32_t previousMillis = 0;
+static const uint32_t measureInterval = 2000;
 
-void envmonMachineInit()
+void envmonMachineInit(void)
 {
     usartInit();
     timerInit();
-    cbInit(&sendBuffer, sendDataStorage, SEND_BUFFER_CAPACITY, sizeof(uint8_t), IGNORE_IF_FULL);
 
     sei();
 }
 
-void envmonMachineLoop()
+void envmonMachineLoop(void)
 {
     uint32_t currentMillis = timerMillis();
     switch (currentState)
     {
-    case SLEEP:
+    case STATE_SLEEP_IDLE:
+    {
         if (currentMillis - previousMillis >= measureInterval)
         {
-            previousMillis = currentMillis;
-            currentState = READ_STATION;
+            previousMillis += measureInterval;
+            currentState = STATE_MEASURING;
         }
         break;
-    case READ_STATION:
+    }
+    case STATE_MEASURING:
+    {
         sensorManagerReadSensors();
 
         sensorPayload *currentPayload = sensorManagerGetData();
 
         char textBuffer[24];
         int length = snprintf(textBuffer, sizeof(textBuffer), "%d,%u\r\n",
-                              currentPayload->temperature,
-                              currentPayload->brightness);
+                                  currentPayload->temperature,
+                                  currentPayload->brightness);
 
-        if (length > 0)
+        if (length > 0 && (uint8_t)length < sizeof(textBuffer))
         {
-            for (int i = 0; i < length; i++)
+            if(!usartSend((const uint8_t *)textBuffer, (uint8_t)length))
             {
-                cbPush(&sendBuffer, &textBuffer[i]);
+                // not send
             }
         }
 
-        currentState = SEND_DATA;
-        break;
-    case SEND_DATA:
-        uint8_t tempByte = 0;
-
-        while (cbPop(&sendBuffer, &tempByte))
-        {
-            usartTransmit(tempByte);
-        }
-
-        currentState = SLEEP;
-        break;
-    default:
-        currentState = SLEEP;
+        currentState = STATE_SLEEP_IDLE;
         break;
     }
+    case STATE_ERROR:
+    {
+        break;
+    }
+    default:
+        currentState = STATE_SLEEP_IDLE;
+        break;
+    }
+}
+
+void stateSleepIdleEntry()
+{
+}
+
+void stateSleepIdleDo()
+{
+}
+
+void stateSleepIdleExit()
+{
+}
+
+void stateMeasuringEntry()
+{
+}
+
+void stateMeasuringDo()
+{
+}
+
+void stateMeasuringExit()
+{
+}
+
+void stateErrorEntry()
+{
+}
+
+void stateErrorDo()
+{
+}
+
+void stateErrorExit()
+{
 }
