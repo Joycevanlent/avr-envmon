@@ -40,7 +40,7 @@ static uint32_t stateEnteredMillis = 0;
 
 static envmonState currentState = ENVMON_STATE_IDLE;
 // static uint32_t errorTimestamp = 0;
-static uint16_t sendErrorCount = 0;
+// static uint16_t sendErrorCount = 0;
 
 static const stateBehavior stateTable[ENVMON_STATE_COUNT] = {
     [ENVMON_STATE_IDLE] = {
@@ -107,25 +107,22 @@ static void idleOnRun(void)
 // -- ENVMON_STATE_MEASURING --
 static void measuringOnEnter(void)
 {
-    sensorManagerReadSensors();
+    sensorManagerStartMeasurement();
 }
 
 static void measuringOnRun(void)
 {
-    const sensorPayload *currentPayload = sensorManagerGetData();
-
-    char textBuffer[24];
-    if (formatSensorPayload(textBuffer, sizeof(textBuffer), currentPayload))
+    if (sensorManagerIsDataReady(lastNowMillis)) 
     {
-        if (!serialSend((const uint8_t *)textBuffer, (uint8_t)strlen(textBuffer)))
-        {
-            sendErrorCount++;
-            changeState(ENVMON_STATE_IDLE);
-            return;
-        }
-    }
+        const sensorPayload *currentPayload = sensorManagerGetData();
 
-    changeState(ENVMON_STATE_IDLE);
+        char textBuffer[24];
+        if (formatSensorPayload(textBuffer, sizeof(textBuffer), currentPayload))
+        {
+            serialSend((const uint8_t *)textBuffer, (uint8_t)strlen(textBuffer));
+        }
+        changeState(ENVMON_STATE_IDLE);
+    }
 }
 
 // --- ENVMON_STATE_ERROR ---

@@ -28,13 +28,14 @@ else()
         set(SERIAL_BUFFER_SIZE "32" CACHE STRING "Capacity of the serial send buffer")
         set(ADC_CHANNEL_LDR  "0" CACHE STRING "ADC channel for the brightness sensor (0-5)")
         set(OW_PORT_LETTER "D" CACHE STRING "The PORT letter for the OneWire bus (e.g., B, C, D)")
-        set(OW_PIN_NUMBER "4" CACHE STRING "The bit/pin number on the chosen port (0-7)")
+        set(OW_PIN_NUMBER "7" CACHE STRING "The bit/pin number on the chosen port (0-7)")
 
         add_executable(main
             src/main.c
             src/circularbuffer.c
             src/envmon_machine.c
             src/sensor_manager.c
+            src/ds18b20.c
             src/drivers/avr/serial.c
             src/drivers/avr/timer.c
             src/drivers/avr/power.c

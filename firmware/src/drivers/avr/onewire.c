@@ -22,10 +22,11 @@ bool oneWireReset(void)
     _delay_us(480);
 
     oneWireRelease();
-    _delay_us(60);
+    _delay_us(70);
 
-    bool presenceDetected = oneWireReadPin();
-    _delay_us(420);
+    bool presenceDetected = !oneWireReadPin();
+
+    _delay_us(410);
 
     return presenceDetected;
 }
@@ -53,13 +54,15 @@ void oneWireWriteBit(bool bit)
 
 bool oneWireReadBit(void)
 {
-    bool incomingBit = 0;
+    bool incomingBit = false;
+
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
         oneWireDriveLow();
-        _delay_us(2);
+        _delay_us(3);
+
         oneWireRelease();
-        _delay_us(8);
+        _delay_us(9);
 
         incomingBit = oneWireReadPin();
     }
@@ -98,13 +101,13 @@ uint8_t oneWireReadByte(void)
 static inline void oneWireDriveLow(void)
 {
     ONEWIRE_PORT &= ~ONEWIRE_BIT;
-    ONEWIRE_DDR |= ONEWIRE_BIT; // Make output
+    ONEWIRE_DDR |= ONEWIRE_BIT; // Output
 }
 
 static inline void oneWireRelease(void)
 {
-    ONEWIRE_DDR &= ~ONEWIRE_BIT; // Make input
-    ONEWIRE_PORT &= ~ONEWIRE_BIT;
+    ONEWIRE_DDR &= ~ONEWIRE_BIT; // Input
+    ONEWIRE_PORT |= ONEWIRE_BIT;
 }
 
 static inline bool oneWireReadPin(void)

@@ -1,28 +1,37 @@
-/**
- * @file sensor_manager.h
- */
-
 #ifndef SENSOR_MANAGER_H
 #define SENSOR_MANAGER_H
 
 #include "sensor_data.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+
 /**
- * @brief Initializes the sensor manager and all underlying sensor peripherals (e.g., I2C, ADC).
+ * @brief Initializes the sensor manager and connected sensors.
  */
 void sensorManagerInit(void);
 
 /**
- * @brief Triggers a new measurement cycle for all active sensors.
+ * @brief Starts a new asynchronous measurement cycle.
+ *
+ * Initiates temperature conversion and records the start time
+ * of the measurement cycle.
  */
-void sensorManagerReadSensors(void);
+void sensorManagerStartMeasurement(void);
 
 /**
- * @brief Retrieves a pointer to the most recently measured sensor data.
- * 
- * 
- * @return sensorPayload* Pointer to the structure containing the latest measurements.
+ * @brief Checks whether the current measurement cycle is complete.
+ *
+ * @param nowMillis Current system time in milliseconds.
+ * @return true if fresh sensor data is available, otherwise false.
  */
-const sensorPayload* sensorManagerGetData(void);
+bool sensorManagerIsDataReady(uint32_t nowMillis);
+
+/**
+ * @brief Returns the latest sensor measurements.
+ *
+ * @return Pointer to the current sensor payload.
+ */
+const sensorPayload *sensorManagerGetData(void);
 
 #endif // SENSOR_MANAGER_H
