@@ -27,6 +27,8 @@ else()
         set(SERIAL_BAUD "9600" CACHE STRING "Baudrate for serial communication")
         set(SERIAL_BUFFER_SIZE "32" CACHE STRING "Capacity of the serial send buffer")
         set(ADC_CHANNEL_LDR  "0" CACHE STRING "ADC channel for the brightness sensor (0-5)")
+        set(OW_PORT_LETTER "D" CACHE STRING "The PORT letter for the OneWire bus (e.g., B, C, D)")
+        set(OW_PIN_NUMBER "4" CACHE STRING "The bit/pin number on the chosen port (0-7)")
 
         add_executable(main
             src/main.c
@@ -37,6 +39,7 @@ else()
             src/drivers/avr/timer.c
             src/drivers/avr/power.c
             src/drivers/avr/adc.c
+            src/drivers/avr/onewire.c
             src/drivers/avr/platform.c
         )
 
@@ -48,6 +51,8 @@ else()
             SEND_BUFFER_CAPACITY=${SERIAL_BUFFER_SIZE}
             BAUD=${SERIAL_BAUD}
             LDR_CHANNEL=${ADC_CHANNEL_LDR}
+            ONEWIRE_PORT_LETTER=${OW_PORT_LETTER}
+            ONEWIRE_PIN_NUM=${OW_PIN_NUMBER}
         )
 
         add_custom_command(TARGET main POST_BUILD
