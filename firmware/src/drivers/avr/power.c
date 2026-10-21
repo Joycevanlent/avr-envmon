@@ -1,4 +1,4 @@
-#include "drivers/avr/power.h"
+#include "power.h"
 
 #include <avr/sleep.h>
 #include <avr/interrupt.h>

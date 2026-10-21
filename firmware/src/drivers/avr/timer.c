@@ -1,4 +1,4 @@
-#include "drivers/avr/timer.h"
+#include "timer.h"
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -20,11 +20,7 @@ void timerInit()
     TIMSK0 |= _BV(OCIE0A);
 
     // Set prescaler to 64 (249 fits into 8 bit)
-    TCCR0B &= ~_BV(CS02);
-    TCCR0B |= _BV(CS01);
-    TCCR0B |= _BV(CS00);
-
-    sei();
+    TCCR0B = (TCCR0B & ~_BV(CS02)) | (_BV(CS01) | _BV(CS00));
 }
 
 /**

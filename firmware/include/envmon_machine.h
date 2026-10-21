@@ -11,6 +11,6 @@ void envmonMachineInit(void);
 /**
  * @brief Execution loop for the environmental monitor machine.
  */
-void envmonMachineLoop(uint32_t nowMillis);
+void envmonMachineRun(uint32_t nowMillis);
 
 #endif // ENVMON_MACHINE_H

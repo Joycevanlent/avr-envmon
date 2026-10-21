@@ -1,5 +1,6 @@
 #include "envmon_machine.h"
-#include "usart.h"
+#include "platform.h"
+#include "serial.h"
 #include "timer.h"
 #include "power.h"
 
@@ -7,14 +8,13 @@
 
 int main(void)
 {
-    usartInit();
-    timerInit();
+    platformInit();
     envmonMachineInit();
 
     while(true)
     {
         uint32_t currentMillis = timerMillis();
-        envmonMachineLoop(currentMillis);
+        envmonMachineRun(currentMillis);
 
         powerSleepIdle();
     }

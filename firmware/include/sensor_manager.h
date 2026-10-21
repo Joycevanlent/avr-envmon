@@ -23,6 +23,6 @@ void sensorManagerReadSensors(void);
  * 
  * @return sensorPayload* Pointer to the structure containing the latest measurements.
  */
-sensorPayload* sensorManagerGetData(void);
+const sensorPayload* sensorManagerGetData(void);
 
 #endif // SENSOR_MANAGER_H
