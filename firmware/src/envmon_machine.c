@@ -1,6 +1,7 @@
 #include "envmon_machine.h"
-#include "sensor_data.h"
 #include "sensor_manager.h"
+#include "sensor_status.h"
+#include "protocol.h"
 #include "serial.h"
 
 #include <stdbool.h>
@@ -35,12 +36,13 @@ static void errorOnRun(void);
 static bool formatSensorPayload(char *buffer, uint8_t bufferSize, const sensorPayload *payload);
 static uint32_t stateElapsedMillis(void);
 
+static envmonState currentState = ENVMON_STATE_IDLE;
 static uint32_t lastNowMillis = 0;
 static uint32_t stateEnteredMillis = 0;
 
-static envmonState currentState = ENVMON_STATE_IDLE;
-// static uint32_t errorTimestamp = 0;
-// static uint16_t sendErrorCount = 0;
+const uint8_t MAX_CONSECUTIVE_ERRORS = 3;
+const static uint16_t errorTimeOut = 5000;
+static uint8_t consecutiveErrors = 0;
 
 static const stateBehavior stateTable[ENVMON_STATE_COUNT] = {
     [ENVMON_STATE_IDLE] = {
@@ -54,10 +56,20 @@ _Static_assert(sizeof(stateTable) / sizeof(stateTable[0]) == ENVMON_STATE_COUNT,
 
 void envmonMachineInit(void)
 {
-    sensorManagerInit();
+    sensorStatus initStatus = sensorManagerInit();
     lastNowMillis = 0;
     stateEnteredMillis = 0;
-    currentState = ENVMON_STATE_IDLE;
+
+    if (initStatus != SENSOR_OK)
+    {
+        consecutiveErrors++;
+        currentState = ENVMON_STATE_ERROR;
+    }
+    else
+    {
+        consecutiveErrors = 0;
+        currentState = ENVMON_STATE_IDLE;
+    }
 }
 
 static void changeState(envmonState newState)
@@ -99,7 +111,7 @@ static void idleOnRun(void)
 
     if (lastNowMillis - previousMillis >= measureInterval)
     {
-        previousMillis += measureInterval;
+        previousMillis = lastNowMillis;
         changeState(ENVMON_STATE_MEASURING);
     }
 }
@@ -107,15 +119,31 @@ static void idleOnRun(void)
 // -- ENVMON_STATE_MEASURING --
 static void measuringOnEnter(void)
 {
-    sensorManagerStartMeasurement();
+    sensorStatus status = sensorManagerStartMeasurement();
+    if (status != SENSOR_OK)
+    {
+        consecutiveErrors++;
+        changeState(ENVMON_STATE_ERROR);
+    }
 }
 
 static void measuringOnRun(void)
 {
-    if (sensorManagerIsDataReady(lastNowMillis)) 
-    {
-        const sensorPayload *currentPayload = sensorManagerGetData();
+    bool dataReady = false;
+    sensorStatus status = sensorManagerIsDataReady(lastNowMillis, &dataReady);
 
+    if (status != SENSOR_OK)
+    {
+        consecutiveErrors++;
+        changeState(ENVMON_STATE_ERROR);
+        return;
+    }
+
+    if (dataReady)
+    {
+        consecutiveErrors = 0;
+
+        const sensorPayload *currentPayload = sensorManagerGetData();
         char textBuffer[24];
         if (formatSensorPayload(textBuffer, sizeof(textBuffer), currentPayload))
         {
@@ -128,22 +156,25 @@ static void measuringOnRun(void)
 // --- ENVMON_STATE_ERROR ---
 static void errorOnEnter(void)
 {
-    // stub
+    char textBuffer[24];
+
+    if (protocolFormatSensorError(textBuffer, sizeof(textBuffer)))
+    {
+        serialSend(
+            (const uint8_t *)textBuffer,
+            (uint8_t)strlen(textBuffer));
+    }
 }
 
 static void errorOnRun(void)
 {
-    changeState(ENVMON_STATE_IDLE);
+    if (stateElapsedMillis() >= errorTimeOut)
+    {
+        changeState(ENVMON_STATE_IDLE);
+    }
 }
 
-// temp helper
-static bool formatSensorPayload(char *buffer, uint8_t bufferSize, const sensorPayload *payload)
-{
-    int length = snprintf(buffer, bufferSize, "%d,%u\r\n", payload->temperature, payload->brightness);
-    return (length > 0 && length < (int)bufferSize);
-}
-
-__attribute__((unused)) uint32_t stateElapsedMillis(void)
+static uint32_t stateElapsedMillis(void)
 {
     uint32_t elapsedMillis = lastNowMillis - stateEnteredMillis;
     return elapsedMillis;

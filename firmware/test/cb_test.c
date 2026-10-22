@@ -364,10 +364,8 @@ static void test_cb_struct_elements_and_bounds(void)
     }
 }
 
-int main(void)
+void run_cb_tests(void)
 {
-    printf("=== STARTING ALL CIRCULAR BUFFER TESTS ===\n");
- 
     RUN_TEST(test_cb_init);
     RUN_TEST(test_cb_init_rejects_bad_arguments);
     RUN_TEST(test_cb_push_pop_basic);
@@ -381,7 +379,4 @@ int main(void)
     RUN_TEST(test_cb_reset);
     RUN_TEST(test_cb_null_arguments);
     RUN_TEST(test_cb_struct_elements_and_bounds);
- 
-    printf("=== ALL TESTS PASSED SUCCESSFULLY ===\n");
-    return 0;
 }

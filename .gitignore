@@ -55,5 +55,6 @@ dkms.conf
 *.dwo
 
 build/
-/.vscode
+build_avr/
 build_tests/
+/.vscode

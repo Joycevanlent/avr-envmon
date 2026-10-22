@@ -2,6 +2,7 @@
  * @file circularbuffer.h
  * @brief Generic fixed-size circular (ring) buffer, safe to share between an
  * interrupt service routine and the main loop.
+ * 
  * One slot is always kept empty to tell "full" from "empty", so the usable
  * capacity is `capacity - 1` elements.
  */

@@ -1,4 +1,107 @@
-cmake -G Ninja -B build .
+# Environmental Monitor — Firmware
 
-cmake --build build
-cmake --build build --target upload
+Firmware for an embedded environmental monitoring system, written in C.
+
+The project currently targets the **Arduino Uno (ATmega328P)**. The architecture is intended to allow platform-specific implementations to be replaced when targeting other microcontrollers.
+
+## Architecture
+
+The firmware separates application logic from platform-dependent hardware drivers.
+
+- **Application logic:** sensor management, state machine and circular buffer.
+- **Platform drivers:** hardware-specific implementations, currently located in `src/drivers/avr/`.
+
+This separation makes it easier to port the project to another microcontroller in the future.
+
+## Supported targets
+
+| Target | Status |
+|---|---|
+| Arduino Uno (ATmega328P) | Current target |
+| Other microcontrollers | Future target |
+
+## Requirements
+
+The tools required depend on the selected target.
+
+For the current AVR target:
+
+- CMake
+- Ninja
+- AVR GCC toolchain (`avr-gcc`)
+- `avr-objcopy`
+- `avrdude`
+
+The current AVR toolchain configuration is located at `cmake/avr-toolchain.cmake`.
+
+## Firmware build
+
+Run the following commands from the `firmware` directory in PowerShell.
+
+### Configure
+
+```powershell
+cmake -S . -B build_avr -G Ninja -DBUILD_FIRMWARE=ON -DBUILD_TESTS=OFF -DBOARD=uno "-DCMAKE_TOOLCHAIN_FILE=$((Resolve-Path .\cmake\avr-toolchain.cmake).Path)"
+```
+
+### Build
+
+```powershell
+cmake --build build_avr
+```
+
+The generated firmware image is `build_avr/main.hex`.
+
+## Upload to Arduino Uno
+
+Connect the Arduino Uno and verify the configured serial port. The default is `COM3`; change `UPLOAD_PORT` in `CMakeLists.txt` if necessary.
+
+```powershell
+cmake --build build_avr --target upload
+```
+
+## Unit tests
+
+Unit tests run natively on the host PC and do not require a microcontroller.
+
+### Configure and build
+
+```powershell
+cmake -S . -B build_tests -G Ninja -DBUILD_FIRMWARE=OFF -DBUILD_TESTS=ON
+cmake --build build_tests
+```
+
+### Run all tests
+
+```powershell
+ctest --test-dir build_tests --output-on-failure
+```
+
+### Run individual test suites
+
+Circular buffer:
+
+```powershell
+.\build_tests\test_runner.exe cb
+```
+
+CRC-8:
+
+```powershell
+.\build_tests\test_runner.exe crc
+```
+
+All suites directly:
+
+```powershell
+.\build_tests\test_runner.exe all
+```
+
+## Build directories
+
+| Directory | Purpose |
+|---|---|
+| `build_avr/` | Firmware build for the current AVR target |
+| `build_tests/` | Host-based unit tests |
+
+The firmware and host tests use separate build directories because they require different compilers and target platforms.

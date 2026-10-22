@@ -1,35 +1,67 @@
 #include "ds18b20.h"
 #include "onewire.h"
+#include "crc8.h"
 
-bool ds18b20Init(void)
+#include <stddef.h>
+
+sensorStatus ds18b20Init(void)
 {
-    if (oneWireReset())
+    if (!oneWireReset())
     {
-        return true;
+        return SENSOR_ERR_NO_PRESENCE;
     }
-    else
-    {
-        return false;
-    }
+
+    return SENSOR_OK;
 }
 
-void ds18b20StartConversion(void)
+sensorStatus ds18b20StartConversion(void)
 {
-    oneWireReset();
-    oneWireWriteByte(0xCC);
-    oneWireWriteByte(0x44);
+    if (!oneWireReset())
+    {
+        return SENSOR_ERR_NO_PRESENCE;
+    }
+
+    oneWireWriteByte(0xCC); // Skip ROM
+    oneWireWriteByte(0x44); // Convert T
+
+    return SENSOR_OK;
 }
 
-int16_t ds18b20ReadRaw(void)
+sensorStatus ds18b20Read(int16_t *rawTemperature)
 {
-    oneWireReset();
-    oneWireWriteByte(0xCC);
-    oneWireWriteByte(0xBE);
+    if (rawTemperature == NULL)
+    {
+        return SENSOR_ERR_INVALID_VALUE;
+    }
 
-    uint8_t lsb = oneWireReadByte();
-    uint8_t msb = oneWireReadByte();
+    if (!oneWireReset())
+    {
+        return SENSOR_ERR_NO_PRESENCE;
+    }
 
-    int16_t rawTemperature = (int16_t)((msb << 8) | lsb);
+    oneWireWriteByte(0xCC); // Skip ROM
+    oneWireWriteByte(0xBE); // Read Scratchpad
 
-    return rawTemperature;
+    uint8_t scratchpad[9];
+    for (uint8_t i = 0; i < 9; i++)
+    {
+        scratchpad[i] = oneWireReadByte();
+    }
+
+    // CHeck first 8 bytes using the last CRC byte
+    uint8_t calculatedCrc = crc8Calculate(scratchpad, 8);
+    if (calculatedCrc != scratchpad[8])
+    {
+        return SENSOR_ERR_CRC;
+    }
+
+    // Check the start value (85 °C = 0x0550), which means conversion failed
+    int16_t raw = (int16_t)((scratchpad[1] << 8) | scratchpad[0]);
+    if (raw == 0x0550)
+    {
+        return SENSOR_ERR_TIMEOUT; // Conversion not done or invalid value
+    }
+
+    *rawTemperature = raw;
+    return SENSOR_OK;
 }

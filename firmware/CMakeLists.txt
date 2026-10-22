@@ -1,41 +1,25 @@
+
 cmake_minimum_required(VERSION 3.20)
 
-option(RUNNING_TESTS "Build unit tests for the Host PC instead or a microcontroller target" OFF)
+project(avr-envmon C)
 
-if(RUNNING_TESTS)
-    project(avr-sensor-station-tests C)
+# --- CONFIGURATION ---
 
-    add_executable(cb_test
-        test/cb_test.c
-        src/circularbuffer.c
-    )
+set(BOARD "uno" CACHE STRING "Target board (e.g., uno or esp32)")
+set(UPLOAD_PORT "COM3" CACHE STRING "Serial port for uploading")
 
-    target_include_directories(cb_test PRIVATE include)
-    target_compile_options(cb_test PRIVATE -Wall -Wextra -g)
+option(BUILD_FIRMWARE "Build AVR firmware" ON)
+option(BUILD_TESTS "Build host unit tests" ON)
 
-else()
-    set(TARGET_PLATFORM "avr" CACHE STRING "Target microcontroller platform")
+# --- AVR FIRMWARE ---
 
-    if(TARGET_PLATFORM STREQUAL "avr")
-        project(avr-sensor-station C)
+if(BUILD_FIRMWARE)
 
+    if(BOARD STREQUAL "uno")
         set(MCU atmega328p)
         set(F_CPU 16000000UL)
-        set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/avr-toolchain.cmake)
 
-        # --- HARDWARE CONFIGURATION VIA CMAKE ---
-        set(SERIAL_BAUD "9600" CACHE STRING "Baudrate for serial communication")
-        set(SERIAL_BUFFER_SIZE "32" CACHE STRING "Capacity of the serial send buffer")
-        set(ADC_CHANNEL_LDR  "0" CACHE STRING "ADC channel for the brightness sensor (0-5)")
-        set(OW_PORT_LETTER "D" CACHE STRING "The PORT letter for the OneWire bus (e.g., B, C, D)")
-        set(OW_PIN_NUMBER "7" CACHE STRING "The bit/pin number on the chosen port (0-7)")
-
-        add_executable(main
-            src/main.c
-            src/circularbuffer.c
-            src/envmon_machine.c
-            src/sensor_manager.c
-            src/ds18b20.c
+        set(PLATFORM_SOURCES
             src/drivers/avr/serial.c
             src/drivers/avr/timer.c
             src/drivers/avr/power.c
@@ -43,31 +27,94 @@ else()
             src/drivers/avr/onewire.c
             src/drivers/avr/platform.c
         )
-
-        target_include_directories(main PRIVATE include)
-        target_compile_options(main PRIVATE -mmcu=${MCU} -DF_CPU=${F_CPU} -Os -Wall -Wextra)
-        target_link_options(main PRIVATE -mmcu=${MCU})
-
-        target_compile_definitions(main PRIVATE
-            SEND_BUFFER_CAPACITY=${SERIAL_BUFFER_SIZE}
-            BAUD=${SERIAL_BAUD}
-            LDR_CHANNEL=${ADC_CHANNEL_LDR}
-            ONEWIRE_PORT_LETTER=${OW_PORT_LETTER}
-            ONEWIRE_PIN_NUM=${OW_PIN_NUMBER}
-        )
-
-        add_custom_command(TARGET main POST_BUILD
-            COMMAND avr-objcopy -O ihex $<TARGET_FILE:main> ${CMAKE_BINARY_DIR}/main.hex
-            COMMENT "Converting to hex"
-        )
-
-        add_custom_target(upload
-            COMMAND avrdude -c arduino -p ${MCU} -P COM3 -b 115200 -U flash:w:${CMAKE_BINARY_DIR}/main.hex:i
-            DEPENDS main
-            COMMENT "Uploading to Arduino"
-        )
-
     else()
-        message(FATAL_ERROR "Unknown TARGET_PLATFORM: ${TARGET_PLATFORM}")
+        message(FATAL_ERROR "Unknown or unsupported board: ${BOARD}")
     endif()
+
+    add_executable(main
+        src/main.c
+        src/circularbuffer.c
+        src/envmon_machine.c
+        src/sensor_manager.c
+        src/ds18b20.c
+        src/crc8.c
+        ${PLATFORM_SOURCES}
+    )
+
+    target_include_directories(main PRIVATE
+        include
+        include/board/${BOARD}
+    )
+
+    target_compile_options(main PRIVATE
+        -mmcu=${MCU}
+        -DF_CPU=${F_CPU}
+        -Os
+        -Wall
+        -Wextra
+    )
+
+    target_compile_definitions(main PRIVATE
+        SEND_BUFFER_CAPACITY=32
+        BAUD=9600
+    )
+
+    target_link_options(main PRIVATE
+        -mmcu=${MCU}
+    )
+
+    add_custom_command(TARGET main POST_BUILD
+        COMMAND avr-objcopy
+            -O ihex
+            $<TARGET_FILE:main>
+            ${CMAKE_CURRENT_BINARY_DIR}/main.hex
+        COMMENT "Converting firmware to HEX..."
+    )
+
+    add_custom_target(upload
+        COMMAND avrdude
+            -c arduino
+            -p ${MCU}
+            -P ${UPLOAD_PORT}
+            -b 115200
+            -U flash:w:${CMAKE_CURRENT_BINARY_DIR}/main.hex:i
+        DEPENDS main
+        COMMENT "Uploading to Arduino on port ${UPLOAD_PORT}..."
+    )
+
+endif()
+
+# --- UNIT TESTS (HOST PC) ---
+
+if(BUILD_TESTS)
+
+    enable_testing()
+
+    add_executable(test_runner
+        test/main_test.c
+        test/cb_test.c
+        test/crc_test.c
+        src/circularbuffer.c
+        src/crc8.c
+    )
+
+    target_include_directories(test_runner PRIVATE
+        include
+    )
+
+    target_compile_options(test_runner PRIVATE
+        -Wall
+        -Wextra
+    )
+
+    add_test(
+        NAME CircularBufferTest
+        COMMAND test_runner cb
+    )
+
+    add_test(
+        NAME CRC8Test
+        COMMAND test_runner crc
+    )
+
 endif()

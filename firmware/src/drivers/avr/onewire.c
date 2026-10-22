@@ -1,4 +1,5 @@
 #include "onewire.h"
+#include "board_config.h"
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -107,7 +108,6 @@ static inline void oneWireDriveLow(void)
 static inline void oneWireRelease(void)
 {
     ONEWIRE_DDR &= ~ONEWIRE_BIT; // Input
-    ONEWIRE_PORT |= ONEWIRE_BIT;
 }
 
 static inline bool oneWireReadPin(void)
