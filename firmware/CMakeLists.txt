@@ -38,6 +38,7 @@ if(BUILD_FIRMWARE)
         src/sensor_manager.c
         src/ds18b20.c
         src/crc8.c
+        src/protocol.c
         ${PLATFORM_SOURCES}
     )
 

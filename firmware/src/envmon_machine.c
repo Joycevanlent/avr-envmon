@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define MAX_CONSECUTIVE_ERRORS 3U
+
 typedef enum
 {
     ENVMON_STATE_IDLE,
@@ -35,14 +37,15 @@ static void errorOnEnter(void);
 static void errorOnRun(void);
 static bool formatSensorPayload(char *buffer, uint8_t bufferSize, const sensorPayload *payload);
 static uint32_t stateElapsedMillis(void);
+static void registerError(void);
 
 static envmonState currentState = ENVMON_STATE_IDLE;
 static uint32_t lastNowMillis = 0;
 static uint32_t stateEnteredMillis = 0;
 
-const uint8_t MAX_CONSECUTIVE_ERRORS = 3;
-const static uint16_t errorTimeOut = 5000;
+static const uint32_t errorTimeoutMillis = 5000U;
 static uint8_t consecutiveErrors = 0;
+static bool permanentError = false;
 
 static const stateBehavior stateTable[ENVMON_STATE_COUNT] = {
     [ENVMON_STATE_IDLE] = {
@@ -56,19 +59,17 @@ _Static_assert(sizeof(stateTable) / sizeof(stateTable[0]) == ENVMON_STATE_COUNT,
 
 void envmonMachineInit(void)
 {
-    sensorStatus initStatus = sensorManagerInit();
     lastNowMillis = 0;
     stateEnteredMillis = 0;
+    consecutiveErrors = 0;
+    permanentError = false;
+    currentState = ENVMON_STATE_IDLE;
+
+    sensorStatus initStatus = sensorManagerInit();
 
     if (initStatus != SENSOR_OK)
     {
-        consecutiveErrors++;
-        currentState = ENVMON_STATE_ERROR;
-    }
-    else
-    {
-        consecutiveErrors = 0;
-        currentState = ENVMON_STATE_IDLE;
+        registerError();
     }
 }
 
@@ -122,8 +123,7 @@ static void measuringOnEnter(void)
     sensorStatus status = sensorManagerStartMeasurement();
     if (status != SENSOR_OK)
     {
-        consecutiveErrors++;
-        changeState(ENVMON_STATE_ERROR);
+        registerError();
     }
 }
 
@@ -134,8 +134,7 @@ static void measuringOnRun(void)
 
     if (status != SENSOR_OK)
     {
-        consecutiveErrors++;
-        changeState(ENVMON_STATE_ERROR);
+        registerError();
         return;
     }
 
@@ -144,11 +143,19 @@ static void measuringOnRun(void)
         consecutiveErrors = 0;
 
         const sensorPayload *currentPayload = sensorManagerGetData();
-        char textBuffer[24];
-        if (formatSensorPayload(textBuffer, sizeof(textBuffer), currentPayload))
+
+        char textBuffer[40];
+
+        if (protocolFormatSensorPayload(
+                textBuffer,
+                sizeof(textBuffer),
+                currentPayload))
         {
-            serialSend((const uint8_t *)textBuffer, (uint8_t)strlen(textBuffer));
+            serialSend(
+                (const uint8_t *)textBuffer,
+                (uint8_t)strlen(textBuffer));
         }
+
         changeState(ENVMON_STATE_IDLE);
     }
 }
@@ -168,10 +175,30 @@ static void errorOnEnter(void)
 
 static void errorOnRun(void)
 {
-    if (stateElapsedMillis() >= errorTimeOut)
+    if (permanentError)
+    {
+        return;
+    }
+
+    if (stateElapsedMillis() >= errorTimeoutMillis)
     {
         changeState(ENVMON_STATE_IDLE);
     }
+}
+
+static void registerError(void)
+{
+    if (consecutiveErrors < MAX_CONSECUTIVE_ERRORS)
+    {
+        consecutiveErrors++;
+    }
+
+    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS)
+    {
+        permanentError = true;
+    }
+
+    changeState(ENVMON_STATE_ERROR);
 }
 
 static uint32_t stateElapsedMillis(void)
