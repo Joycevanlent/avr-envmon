@@ -24,6 +24,7 @@ if(BUILD_FIRMWARE)
             src/drivers/avr/timer.c
             src/drivers/avr/power.c
             src/drivers/avr/adc.c
+            src/drivers/avr/spi.c
             src/drivers/avr/onewire.c
             src/drivers/avr/platform.c
         )

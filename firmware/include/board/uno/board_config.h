@@ -17,7 +17,7 @@
 #define ONEWIRE_PORT_LETTER D
 
 /** @brief Bit position of the 1-Wire data pin on the selected port. */
-#define ONEWIRE_PIN_NUM 7
+#define ONEWIRE_PIN_NUM 2
 
 /* --- Light sensor --- */
 
