@@ -24,6 +24,24 @@
 /** @brief ADC channel connected to the light-dependent resistor (LDR). */
 #define LDR_CHANNEL 0
 
+/* --- ST7735S display --- */
+
+/** @brief Display chip select pin. */
+#define ST7735S_CS_PORT_LETTER B
+#define ST7735S_CS_PIN_NUM 2
+
+/** @brief Display data/command pin. */
+#define ST7735S_DC_PORT_LETTER D
+#define ST7735S_DC_PIN_NUM 7
+
+/** @brief Display reset pin. */
+#define ST7735S_RST_PORT_LETTER B
+#define ST7735S_RST_PIN_NUM 0
+
+/** @brief Display backlight pin. */
+#define ST7735S_BL_PORT_LETTER B
+#define ST7735S_BL_PIN_NUM 1
+
 /* --- UART serial communication --- */
 
 /** @brief UART baud rate in bits per second. */

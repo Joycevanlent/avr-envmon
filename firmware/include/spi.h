@@ -17,7 +17,7 @@
  * Configures the SPI pins, enables the peripheral
  * and sets the default clock divider to 128.
  */
-void spi_init(void);
+void spiInit(void);
 
 /**
  * @brief Transfers one byte over SPI.
@@ -25,7 +25,7 @@ void spi_init(void);
  * @param data Byte to transmit.
  * @return Byte received during the transfer.
  */
-uint8_t spi_transfer(uint8_t data);
+uint8_t spiTransfer(uint8_t data);
 
 /**
  * @brief Sets the SPI clock divider.
@@ -34,16 +34,16 @@ uint8_t spi_transfer(uint8_t data);
  *                2, 4, 8, 16, 32, 64 and 128.
  *                Invalid values default to 4.
  */
-void spi_set_clock_divider(uint8_t divider);
+void spiSetClockDivider(uint8_t divider);
 
 /**
  * @brief Enables the SPI peripheral.
  */
-void spi_enable(void);
+void spiEnable(void);
 
 /**
  * @brief Disables the SPI peripheral.
  */
-void spi_disable(void);
+void spiDisable(void);
 
 #endif /* SPI_H */

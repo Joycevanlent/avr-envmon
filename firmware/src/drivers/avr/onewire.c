@@ -1,8 +1,8 @@
 #include "onewire.h"
+#include "delay.h"
 #include "board_config.h"
 
 #include <avr/io.h>
-#include <util/delay.h>
 #include <util/atomic.h>
 
 #define GLUE(a, b) a##b
@@ -20,14 +20,14 @@ static inline bool oneWireReadPin(void);
 bool oneWireReset(void)
 {
     oneWireDriveLow();
-    _delay_us(480);
+    delayUs(480);
 
     oneWireRelease();
-    _delay_us(70);
+    delayUs(70);
 
     bool presenceDetected = !oneWireReadPin();
 
-    _delay_us(410);
+    delayUs(410);
 
     return presenceDetected;
 }
@@ -39,16 +39,16 @@ void oneWireWriteBit(bool bit)
         if (bit == 0)
         {
             oneWireDriveLow();
-            _delay_us(58);
+            delayUs(58);
             oneWireRelease();
-            _delay_us(2);
+            delayUs(2);
         }
         else
         {
             oneWireDriveLow();
-            _delay_us(6);
+            delayUs(6);
             oneWireRelease();
-            _delay_us(54);
+            delayUs(54);
         }
     }
 }
@@ -60,15 +60,15 @@ bool oneWireReadBit(void)
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
         oneWireDriveLow();
-        _delay_us(3);
+        delayUs(3);
 
         oneWireRelease();
-        _delay_us(9);
+        delayUs(9);
 
         incomingBit = oneWireReadPin();
     }
 
-    _delay_us(50);
+    delayUs(50);
 
     return incomingBit;
 }

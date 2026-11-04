@@ -1,30 +1,30 @@
+
 #include "spi.h"
 
 #include <avr/io.h>
 
-void spi_init(void)
+void spiInit(void)
 {
-    // Configure SPI pins
+    // Configure MOSI, SCK and hardware SS as outputs
     DDRB |= _BV(DDB3) | _BV(DDB5) | _BV(DDB2);
+
+    // Configure MISO as input
     DDRB &= ~_BV(DDB4);
 
-    // Keep slave select inactive
-    PORTB |= _BV(DDB2);
+    // Keep hardware SS high
+    PORTB |= _BV(PORTB2);
 
-    // Enable SPI and configure as master
-    // CPOL = 0, CPHA = 0, MSB first
+    // Enable SPI, master mode, mode 0, MSB first
+    // Clock divider is configured separately
     SPCR = _BV(SPE) | _BV(MSTR);
 
-    // Set SPI clock to F_CPU / 128 (125 kHz at 16 MHz)
-    spi_set_clock_divider(128);
+    spiSetClockDivider(128);
 }
 
-uint8_t spi_transfer(uint8_t data)
+uint8_t spiTransfer(uint8_t data)
 {
-    // Start transmission
     SPDR = data;
 
-    // Wait for transmission complete
     while (!(SPSR & _BV(SPIF)))
     {
     }
@@ -32,9 +32,8 @@ uint8_t spi_transfer(uint8_t data)
     return SPDR;
 }
 
-void spi_set_clock_divider(uint8_t divider)
+void spiSetClockDivider(uint8_t divider)
 {
-    // Clear clock divider bits
     SPCR &= ~(_BV(SPR1) | _BV(SPR0));
     SPSR &= ~_BV(SPI2X);
 
@@ -71,17 +70,17 @@ void spi_set_clock_divider(uint8_t divider)
         break;
 
     default:
-        // Unsupported divider: leave SPI at F_CPU / 4
+        // Unsupported divider: retain F_CPU / 4.
         break;
     }
 }
 
-void spi_enable(void)
+void spiEnable(void)
 {
     SPCR |= _BV(SPE);
 }
 
-void spi_disable(void)
+void spiDisable(void)
 {
     SPCR &= ~_BV(SPE);
 }

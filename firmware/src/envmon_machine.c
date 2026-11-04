@@ -3,6 +3,7 @@
 #include "sensor_status.h"
 #include "protocol.h"
 #include "serial.h"
+#include "st7735s.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -35,7 +36,6 @@ static void measuringOnEnter(void);
 static void measuringOnRun(void);
 static void errorOnEnter(void);
 static void errorOnRun(void);
-static bool formatSensorPayload(char *buffer, uint8_t bufferSize, const sensorPayload *payload);
 static uint32_t stateElapsedMillis(void);
 static void registerError(void);
 
@@ -71,6 +71,9 @@ void envmonMachineInit(void)
     {
         registerError();
     }
+
+    st7735sInit();
+    st7735sFillScreen(ST7735S_COLOR_ORANGE);
 }
 
 static void changeState(envmonState newState)

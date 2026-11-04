@@ -20,26 +20,30 @@ if(BUILD_FIRMWARE)
         set(F_CPU 16000000UL)
 
         set(PLATFORM_SOURCES
-            src/drivers/avr/serial.c
-            src/drivers/avr/timer.c
-            src/drivers/avr/power.c
             src/drivers/avr/adc.c
-            src/drivers/avr/spi.c
+            src/drivers/avr/delay.c
+            src/drivers/avr/gpio.c
             src/drivers/avr/onewire.c
             src/drivers/avr/platform.c
+            src/drivers/avr/power.c
+            src/drivers/avr/serial.c
+            src/drivers/avr/spi.c
+            src/drivers/avr/timer.c    
         )
     else()
         message(FATAL_ERROR "Unknown or unsupported board: ${BOARD}")
     endif()
 
     add_executable(main
-        src/main.c
         src/circularbuffer.c
-        src/envmon_machine.c
-        src/sensor_manager.c
-        src/ds18b20.c
         src/crc8.c
+        src/ds18b20.c
+        src/envmon_machine.c
+        src/led.c
+        src/main.c
         src/protocol.c
+        src/sensor_manager.c
+        src/st7735s.c
         ${PLATFORM_SOURCES}
     )
 
