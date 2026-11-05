@@ -1,3 +1,10 @@
+/**
+ * @file gpio.h
+ * @brief AVR GPIO interface.
+ *
+ * Provides GPIO pin definitions and functions for configuring,
+ * reading and writing AVR microcontroller GPIO pins.
+ */
 
 #ifndef GPIO_H
 #define GPIO_H

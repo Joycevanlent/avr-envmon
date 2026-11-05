@@ -37,8 +37,10 @@ if(BUILD_FIRMWARE)
     add_executable(main
         src/circularbuffer.c
         src/crc8.c
+        src/display_manager.c
         src/ds18b20.c
         src/envmon_machine.c
+        src/font.c
         src/led.c
         src/main.c
         src/protocol.c

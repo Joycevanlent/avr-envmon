@@ -1,4 +1,3 @@
-
 /**
  * @file onewire.h
  * @brief Provides low-level communication over the 1-Wire bus.

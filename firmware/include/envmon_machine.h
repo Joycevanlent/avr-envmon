@@ -1,4 +1,3 @@
-
 /**
  * @file envmon_machine.h
  * @brief Provides the interface for the environmental monitor state machine.

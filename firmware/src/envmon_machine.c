@@ -1,6 +1,7 @@
 #include "envmon_machine.h"
 #include "sensor_manager.h"
 #include "sensor_status.h"
+#include "display_manager.h"
 #include "protocol.h"
 #include "serial.h"
 #include "st7735s.h"
@@ -72,8 +73,7 @@ void envmonMachineInit(void)
         registerError();
     }
 
-    st7735sInit();
-    st7735sFillScreen(ST7735S_COLOR_ORANGE);
+    displayManagerInit();
 }
 
 static void changeState(envmonState newState)
@@ -146,6 +146,9 @@ static void measuringOnRun(void)
         consecutiveErrors = 0;
 
         const sensorPayload *currentPayload = sensorManagerGetData();
+
+        displayManagerShowTemperature(currentPayload->temperature);
+        displayManagerShowLightLevel(currentPayload->brightness);
 
         char textBuffer[40];
 
